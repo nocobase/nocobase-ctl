@@ -1,0 +1,60 @@
+{
+  "name": "nocobase-cli",
+  "version": "2.1.0-alpha.13",
+  "description": "NocoBase CLI",
+  "type": "module",
+  "main": "dist/generated/command-registry.js",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "pnpm run clean && tsc -p tsconfig.json",
+    "dev": "./bin/dev.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "bin": {
+    "nocobase": "./bin/run.js"
+  },
+  "oclif": {
+    "bin": "nocobase",
+    "additionalHelpFlags": [
+      "-h"
+    ],
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/generated/command-registry.js"
+    },
+    "dirname": "nocobase-cli",
+    "topicSeparator": " ",
+    "topics": {
+      "server": {
+        "description": "Manage NocoBase server connections and update command runtimes."
+      },
+      "resource": {
+        "description": "Work with generic collection resources."
+      }
+    }
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
+    "@oclif/core": "^4.10.4",
+    "openapi-types": "^12.1.3",
+    "ora": "^8.2.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "nocobase-cli"
+  }
+}
