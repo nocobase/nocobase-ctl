@@ -255,8 +255,8 @@ export async function ensureRuntimeFromArgv(argv: string[], options: { configFil
     throw new Error(
       [
         'No server is configured for runtime commands.',
-        'Run `nocobase server add --name <name> --base-url <url> --token <token>` first.',
-        'If you configure multiple servers later, switch with `nocobase server use <name>`.',
+        'Run `nocobase-api server add --name <name> --base-url <url> --token <token>` first.',
+        'If you configure multiple servers later, switch with `nocobase-api server use <name>`.',
       ].join('\n'),
     );
   }
@@ -290,7 +290,7 @@ export async function updateServerRuntime(options: {
     throw new Error(
       [
         `Server "${serverName}" is missing a base URL.`,
-        'Update it with `nocobase server add --name <name> --base-url <url>` first.',
+        'Update it with `nocobase-api server add --name <name> --base-url <url>` first.',
       ].join('\n'),
     );
   }

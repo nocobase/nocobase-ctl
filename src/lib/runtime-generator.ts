@@ -227,7 +227,7 @@ function formatFlagExample(parameter: GeneratedParameter) {
 
 function buildExamples(commandId: string, operation: { parameters: GeneratedParameter[]; hasBody?: boolean }) {
   const requiredFlags = operation.parameters.filter((parameter) => parameter.required).map(formatFlagExample);
-  const examples = [`nocobase ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
+  const examples = [`nocobase-api ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
   const firstOptional = operation.parameters.find((parameter) => !parameter.required);
 
   if (firstOptional) {

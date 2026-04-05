@@ -11,7 +11,7 @@ export default class Server extends Command {
 
      if (!server?.baseUrl) {
       this.log('No current server is configured.');
-      this.log('Run `nocobase server add --name <name> --base-url <url> --token <token>` to add one.');
+      this.log('Run `nocobase-api server add --name <name> --base-url <url> --token <token>` to add one.');
       return;
     }
 

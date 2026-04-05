@@ -54,7 +54,7 @@ async function resolveServerRequestTarget(options: {
   const token = options.token ?? server?.auth?.accessToken;
 
   if (!baseUrl) {
-    throw new Error('Missing base URL. Use --base-url or configure one with `nocobase server add`.');
+    throw new Error('Missing base URL. Use --base-url or configure one with `nocobase-api server add`.');
   }
 
   return { baseUrl, token };

@@ -18,10 +18,10 @@
     "dist"
   ],
   "bin": {
-    "nocobase": "./bin/run.js"
+    "nocobase-api": "./bin/run.js"
   },
   "oclif": {
-    "bin": "nocobase",
+    "bin": "nocobase-api",
     "additionalHelpFlags": [
       "-h"
     ],
