@@ -1,7 +1,7 @@
 import { getCurrentServerName, getServer, setServerRuntime } from './auth-store.js';
 import { generateRuntime } from './runtime-generator.js';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.js';
-import { confirmAction, printInfo, printVerbose, printVerboseWarning, setVerboseMode, updateTask } from './ui.js';
+import { confirmAction, printInfo, printVerbose, printVerboseWarning, setVerboseMode, stopTask, updateTask } from './ui.js';
 
 const APP_RETRY_INTERVAL = 2000;
 const APP_RETRY_TIMEOUT = 120000;
@@ -262,15 +262,19 @@ export async function ensureRuntimeFromArgv(argv: string[], options: { configFil
   }
 
   updateTask('Loading command runtime...');
-  printVerbose(`Runtime source: ${baseUrl}`);
-  const document = await fetchSwaggerSchema(baseUrl, token);
-  const runtime = await generateRuntime(document, options.configFile, baseUrl);
-  await saveRuntime(runtime);
-  await setServerRuntime(serverName, {
-    version: runtime.version,
-    schemaHash: runtime.schemaHash,
-    generatedAt: runtime.generatedAt,
-  });
+  try {
+    printVerbose(`Runtime source: ${baseUrl}`);
+    const document = await fetchSwaggerSchema(baseUrl, token);
+    const runtime = await generateRuntime(document, options.configFile, baseUrl);
+    await saveRuntime(runtime);
+    await setServerRuntime(serverName, {
+      version: runtime.version,
+      schemaHash: runtime.schemaHash,
+      generatedAt: runtime.generatedAt,
+    });
+  } finally {
+    stopTask();
+  }
 }
 
 export async function updateServerRuntime(options: {
@@ -296,14 +300,18 @@ export async function updateServerRuntime(options: {
   }
 
   updateTask('Loading command runtime...');
-  printVerbose(`Runtime source: ${baseUrl}`);
-  const document = await fetchSwaggerSchema(baseUrl, token);
-  const runtime = await generateRuntime(document, options.configFile, baseUrl);
-  await saveRuntime(runtime);
-  await setServerRuntime(serverName, {
-    version: runtime.version,
-    schemaHash: runtime.schemaHash,
-    generatedAt: runtime.generatedAt,
-  });
-  return runtime;
+  try {
+    printVerbose(`Runtime source: ${baseUrl}`);
+    const document = await fetchSwaggerSchema(baseUrl, token);
+    const runtime = await generateRuntime(document, options.configFile, baseUrl);
+    await saveRuntime(runtime);
+    await setServerRuntime(serverName, {
+      version: runtime.version,
+      schemaHash: runtime.schemaHash,
+      generatedAt: runtime.generatedAt,
+    });
+    return runtime;
+  } finally {
+    stopTask();
+  }
 }
