@@ -1,7 +1,6 @@
 node_modules/
 /dist/
 /lib/
-/src/generated/
 
 .DS_Store
 *.log
@@ -10,6 +9,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-/.nocobase-cli/
+/.nocobase-api-cli/
 .env
 .env.*
