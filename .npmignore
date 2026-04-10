@@ -1,0 +1,9 @@
+/node_modules
+/src
+/.nocobase-cli
+/scripts
+/tsconfig.json
+/build.config.ts
+/.gitignore
+/yarn.lock
+/pnpm-lock.yaml
