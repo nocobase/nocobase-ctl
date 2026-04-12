@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 await ensureRuntimeFromArgv(process.argv.slice(2), {
-  configFile: path.join(path.dirname(__dirname), 'nocobase-cli.config.json'),
+  configFile: path.join(path.dirname(__dirname), 'nocobase-ctl.config.json'),
 });
 
 await execute({ development: true, dir: import.meta.url });

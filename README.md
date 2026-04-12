@@ -36,7 +36,7 @@ node ./bin/run.js --help
 After packaging or linking, the executable name is:
 
 ```bash
-nocobase
+nbctl
 ```
 
 ## Quick Start
@@ -44,40 +44,40 @@ nocobase
 Add an environment:
 
 ```bash
-nocobase env add --name local --base-url http://localhost:13000/api --token <token>
+nbctl env add --name local --base-url http://localhost:13000/api --token <token>
 ```
 
 Show the current environment:
 
 ```bash
-nocobase env
+nbctl env
 ```
 
 List configured environments:
 
 ```bash
-nocobase env list
+nbctl env list
 ```
 
 Switch the current environment:
 
 ```bash
-nocobase env use local
+nbctl env use local
 ```
 
 Update the runtime command cache from `swagger:get`:
 
 ```bash
-nocobase env update
-nocobase env update -e local
+nbctl env update
+nbctl env update -e local
 ```
 
 Use the generic resource commands:
 
 ```bash
-nocobase resource list --resource users
-nocobase resource get --resource users --filter-by-tk 1
-nocobase resource create --resource users --values '{"nickname":"Ada"}'
+nbctl resource list --resource users
+nbctl resource get --resource users --filter-by-tk 1
+nbctl resource create --resource users --values '{"nickname":"Ada"}'
 ```
 
 ## Runtime Commands
@@ -96,34 +96,34 @@ If the `API documentation plugin` is disabled, the CLI will prompt to enable it.
 Use `-e, --env` to temporarily select an environment:
 
 ```bash
-nocobase env update -e prod
-nocobase resource list --resource users -e prod
+nbctl env update -e prod
+nbctl resource list --resource users -e prod
 ```
 
 This does not change the current environment unless you explicitly run:
 
 ```bash
-nocobase env use <name>
+nbctl env use <name>
 ```
 
 ## Config Scope
 
 The `env` command supports two config scopes:
 
-- `project`: use `./.nocobase-cli` in the current working directory
-- `global`: use the global `.nocobase-cli` directory
+- `project`: use `./.nocobase-ctl` in the current working directory
+- `global`: use the global `.nocobase-ctl` directory
 
 Use `-s, --scope` to select one explicitly:
 
 ```bash
-nocobase env list -s project
-nocobase env add -s global --name prod --base-url http://example.com/api --token <token>
-nocobase env use local -s project
+nbctl env list -s project
+nbctl env add -s global --name prod --base-url http://example.com/api --token <token>
+nbctl env use local -s project
 ```
 
 If you do not pass `--scope`, the CLI uses automatic resolution:
 
-1. current working directory if `./.nocobase-cli` exists
+1. current working directory if `./.nocobase-ctl` exists
 2. `NOCOBASE_HOME_CLI`
 3. your home directory
 
@@ -137,9 +137,9 @@ Current built-in topics:
 Check available commands at any time:
 
 ```bash
-nocobase --help
-nocobase env --help
-nocobase resource --help
+nbctl --help
+nbctl env --help
+nbctl resource --help
 ```
 
 ## Common Flags
@@ -152,13 +152,13 @@ nocobase resource --help
 Example:
 
 ```bash
-nocobase env update -e prod -s global
-nocobase resource list --resource users -e prod -j
+nbctl env update -e prod -s global
+nbctl resource list --resource users -e prod -j
 ```
 
 ## Local Data
 
-The CLI stores its local state in `.nocobase-cli`, including:
+The CLI stores its local state in `.nocobase-ctl`, including:
 
 - `config.json`: environment definitions and current selection
 - `versions/<version>/commands.json`: cached runtime commands for a generated version

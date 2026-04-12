@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 try {
   await ensureRuntimeFromArgv(process.argv.slice(2), {
-    configFile: path.join(path.dirname(__dirname), 'nocobase-cli.config.json'),
+    configFile: path.join(path.dirname(__dirname), 'nocobase-ctl.config.json'),
   });
 
   await execute({ dir: import.meta.url });

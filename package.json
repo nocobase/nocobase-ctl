@@ -19,7 +19,8 @@
     "nocobase-ctl.config.json"
   ],
   "bin": {
-    "nocobase": "./bin/run.js"
+    "nbctl": "./bin/run.js",
+    "nocobase-ctl": "./bin/run.js"
   },
   "oclif": {
     "bin": "nocobase-ctl",
