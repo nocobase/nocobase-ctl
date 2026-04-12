@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/ctl",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "NocoBase Command Line Tool",
   "type": "module",
   "main": "dist/generated/command-registry.js",
