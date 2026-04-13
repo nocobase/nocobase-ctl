@@ -1,14 +1,51 @@
 #!/usr/bin/env -S node --import tsx --disable-warning=ExperimentalWarning
 
 import { ensureRuntimeFromArgv } from '../src/lib/bootstrap.ts';
-import { execute } from '@oclif/core';
+import { flush, run, settings } from '@oclif/core';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+process.env.NODE_ENV = 'development';
+settings.debug = true;
 
-await ensureRuntimeFromArgv(process.argv.slice(2), {
-  configFile: path.join(path.dirname(__dirname), 'nocobase-ctl.config.json'),
-});
+function getCommandToken(argv) {
+  for (const token of argv) {
+    if (!token || token.startsWith('-')) {
+      continue;
+    }
 
-await execute({ development: true, dir: import.meta.url });
+    return token;
+  }
+
+  return undefined;
+}
+
+function formatCliEntryError(error, argv) {
+  const message = error instanceof Error ? error.message : String(error);
+  const missingCommandMatch = message.match(/^Command (.+) not found\.$/);
+  if (missingCommandMatch) {
+    const commandToken = getCommandToken(argv) ?? missingCommandMatch[1];
+    return [
+      `Unknown command: \`${commandToken}\`.`,
+      'If this is a built-in command or a typo, run `nocobase-ctl --help` to inspect available commands.',
+      `If \`${commandToken}\` should be a runtime command from your NocoBase app, run \`nocobase-ctl env update\` and try again.`,
+    ].join('\n');
+  }
+
+  return message;
+}
+
+try {
+  const argv = process.argv.slice(2);
+  await ensureRuntimeFromArgv(argv, {
+    configFile: path.join(path.dirname(__dirname), 'nocobase-ctl.config.json'),
+  });
+
+  await run(argv, import.meta.url);
+  flush();
+} catch (error) {
+  const message = formatCliEntryError(error, process.argv.slice(2));
+  console.error(message);
+  process.exitCode = 1;
+}

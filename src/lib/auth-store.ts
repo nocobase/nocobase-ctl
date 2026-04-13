@@ -84,13 +84,18 @@ export async function getEnv(envName?: string, options: AuthStoreOptions = {}) {
 
 export async function upsertEnv(envName: string, baseUrl: string, accessToken: string, options: AuthStoreOptions = {}) {
   const config = await loadAuthConfig(options);
+  const previous = config.envs[envName];
+  const baseUrlChanged = previous?.baseUrl !== baseUrl;
+  const tokenChanged = previous?.auth?.accessToken !== accessToken;
+
   config.envs[envName] = {
-    ...(config.envs[envName] ?? {}),
+    ...previous,
     baseUrl,
     auth: {
       type: 'token',
       accessToken,
     },
+    runtime: baseUrlChanged || tokenChanged ? undefined : previous?.runtime,
   };
   config.currentEnv = envName;
   await saveAuthConfig(config, options);

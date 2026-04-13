@@ -84,6 +84,12 @@ export function printSection(title: string) {
 
 export function printInfo(message: string) {
   if (activeSpinner) {
+    if (!isInteractiveTerminal()) {
+      activeSpinner = undefined;
+      console.log(pc.cyan(message));
+      return;
+    }
+
     activeSpinner.info(pc.cyan(message));
     activeSpinner = undefined;
     return;
@@ -102,6 +108,12 @@ export function printVerbose(message: string) {
 
 export function printSuccess(message: string) {
   if (activeSpinner) {
+    if (!isInteractiveTerminal()) {
+      activeSpinner = undefined;
+      console.log(pc.green(message));
+      return;
+    }
+
     activeSpinner.succeed(pc.green(message));
     activeSpinner = undefined;
     return;
@@ -112,6 +124,12 @@ export function printSuccess(message: string) {
 
 export function printWarning(message: string) {
   if (activeSpinner) {
+    if (!isInteractiveTerminal()) {
+      activeSpinner = undefined;
+      console.log(pc.yellow(message));
+      return;
+    }
+
     activeSpinner.warn(pc.yellow(message));
     activeSpinner = undefined;
     return;

@@ -2,7 +2,7 @@ import { getCurrentEnvName, getEnv, setEnvRuntime } from './auth-store.ts';
 import type { CliHomeScope } from './cli-home.ts';
 import { generateRuntime } from './runtime-generator.ts';
 import { hasRuntimeSync, saveRuntime } from './runtime-store.ts';
-import { confirmAction, printInfo, printVerbose, printVerboseWarning, setVerboseMode, stopTask, updateTask } from './ui.ts';
+import { confirmAction, printInfo, printVerbose, printWarning, setVerboseMode, stopTask, updateTask } from './ui.ts';
 
 const APP_RETRY_INTERVAL = 2000;
 const APP_RETRY_TIMEOUT = 120000;
@@ -74,14 +74,13 @@ function hasVersionFlag(argv: string[]) {
   return argv.includes('--version') || argv.includes('-v');
 }
 
-function isRootHelp(argv: string[]) {
-  const commandToken = getCommandToken(argv);
-  return !commandToken && hasHelpFlag(argv);
-}
-
 function isBuiltinCommand(argv: string[]) {
   const commandToken = getCommandToken(argv);
   return commandToken === 'env' || commandToken === 'resource';
+}
+
+export function shouldSkipRuntimeBootstrap(argv: string[]) {
+  return hasVersionFlag(argv) || isBuiltinCommand(argv);
 }
 
 async function requestJson(url: string, options: { method?: string; token?: string }) {
@@ -206,10 +205,26 @@ async function confirmEnableApiDoc() {
   return confirmAction('Enable the API documentation plugin now?', { defaultValue: false });
 }
 
-async function fetchSwaggerSchema(baseUrl: string, token?: string) {
-  let response = await waitForSwaggerSchema(baseUrl, token);
+async function fetchSwaggerSchema(
+  baseUrl: string,
+  token?: string,
+  context: {
+    envName?: string;
+    commandToken?: string;
+  } = {},
+  options: {
+    allowEnableApiDoc?: boolean;
+    retryAppAvailability?: boolean;
+  } = {},
+) {
+  let response =
+    options.retryAppAvailability === false ? await requestJson(getSwaggerUrl(baseUrl), { token }) : await waitForSwaggerSchema(baseUrl, token);
 
   if (response.status === 404) {
+    if (options.allowEnableApiDoc === false) {
+      throw new Error('`swagger:get` returned 404. Check the base URL and enable the `API documentation plugin` if needed.');
+    }
+
     printInfo('The API documentation plugin is not enabled.');
     const shouldEnable = await confirmEnableApiDoc();
     if (!shouldEnable) {
@@ -231,17 +246,80 @@ async function fetchSwaggerSchema(baseUrl: string, token?: string) {
   }
 
   if (!response.ok) {
-    throw new Error(`Failed to load swagger schema from \`swagger:get\`.\n${JSON.stringify(response.data, null, 2)}`);
+    throw new Error(formatSwaggerSchemaError(response, { baseUrl, token, ...context }));
   }
 
   return (response.data?.data ?? response.data) as any;
 }
 
+function collectErrorEntries(data: any) {
+  if (Array.isArray(data?.errors)) {
+    return data.errors.filter(Boolean);
+  }
+
+  if (data?.error) {
+    return [data.error];
+  }
+
+  return [];
+}
+
+function hasInvalidTokenError(data: any) {
+  return collectErrorEntries(data).some((entry) => entry?.code === 'INVALID_TOKEN');
+}
+
+export function formatSwaggerSchemaError(
+  response: { status: number; data: any },
+  context: { baseUrl: string; token?: string; envName?: string; commandToken?: string },
+) {
+  if (hasInvalidTokenError(response.data)) {
+    const entries = collectErrorEntries(response.data);
+    const details = entries
+      .map((entry) => {
+        const code = entry?.code ? `[${entry.code}] ` : '';
+        return `${code}${entry?.message ?? 'Authentication failed.'}`;
+      })
+      .join('\n');
+    const envLabel = context.envName ? ` for env "${context.envName}"` : '';
+    const commandHint = context.commandToken
+      ? `If \`${context.commandToken}\` is a runtime command, refresh the runtime after updating the token with \`nocobase-ctl env update\`. If it is a typo, run \`nocobase-ctl --help\` to inspect available commands.`
+      : 'Run `nocobase-ctl --help` to inspect built-in commands, then refresh runtime commands with `nocobase-ctl env update` after updating the token.';
+
+    return [
+      `Authentication failed while loading the command runtime from \`swagger:get\`${envLabel}.`,
+      `Base URL: ${context.baseUrl}`,
+      details,
+      'Update the token with `nocobase-ctl env add --name <name> --base-url <url> --token <token>` or rerun the command with `--token <token>`.',
+      commandHint,
+    ].join('\n');
+  }
+
+  return `Failed to load swagger schema from \`swagger:get\`.\n${JSON.stringify(response.data, null, 2)}`;
+}
+
+export function formatMissingRuntimeEnvError(commandToken?: string) {
+  if (!commandToken) {
+    return [
+      'No env is configured for runtime commands.',
+      'Run `nocobase-ctl env add --name <name> --base-url <url> --token <token>` first.',
+      'If you configure multiple environments later, switch with `nocobase-ctl env use <name>`.',
+    ].join('\n');
+  }
+
+  return [
+    `Unable to resolve runtime command \`${commandToken}\`.`,
+    'No env is configured, so the CLI cannot load runtime commands from `swagger:get`.',
+    'If this is a built-in command or a typo, run `nocobase-ctl --help` to inspect available commands.',
+    'If this should be an application runtime command, run `nocobase-ctl env add --name <name> --base-url <url> --token <token>` and then `nocobase-ctl env update`.',
+  ].join('\n');
+}
+
 export async function ensureRuntimeFromArgv(argv: string[], options: { configFile: string }) {
   const commandToken = getCommandToken(argv);
+  const isRootInvocation = !commandToken;
   setVerboseMode(hasBooleanFlag(argv, 'verbose'));
 
-  if (hasVersionFlag(argv) || isBuiltinCommand(argv)) {
+  if (shouldSkipRuntimeBootstrap(argv)) {
     return;
   }
 
@@ -251,30 +329,31 @@ export async function ensureRuntimeFromArgv(argv: string[], options: { configFil
   const token = readFlag(argv, 'token') ?? env?.auth?.accessToken;
   const runtimeVersion = env?.runtime?.version;
 
-  if (!commandToken || isRootHelp(argv)) {
-    if (!baseUrl) {
-      return;
-    }
-  }
-
   if (runtimeVersion && hasRuntimeSync(runtimeVersion)) {
     return;
   }
 
   if (!baseUrl) {
-    throw new Error(
-      [
-        'No env is configured for runtime commands.',
-        'Run `nocobase-ctl env add --name <name> --base-url <url> --token <token>` first.',
-        'If you configure multiple environments later, switch with `nocobase-ctl env use <name>`.',
-      ].join('\n'),
-    );
+    if (isRootInvocation) {
+      return;
+    }
+    throw new Error(formatMissingRuntimeEnvError(commandToken));
   }
 
   updateTask('Loading command runtime...');
   try {
     printVerbose(`Runtime source: ${baseUrl}`);
-    const document = await fetchSwaggerSchema(baseUrl, token);
+    const document = await fetchSwaggerSchema(
+      baseUrl,
+      token,
+      { envName, commandToken },
+      isRootInvocation
+        ? {
+            allowEnableApiDoc: false,
+            retryAppAvailability: false,
+          }
+        : undefined,
+    );
     const runtime = await generateRuntime(document, options.configFile, baseUrl);
     await saveRuntime(runtime);
     await setEnvRuntime(envName, {
@@ -282,6 +361,13 @@ export async function ensureRuntimeFromArgv(argv: string[], options: { configFil
       schemaHash: runtime.schemaHash,
       generatedAt: runtime.generatedAt,
     });
+  } catch (error) {
+    if (!isRootInvocation) {
+      throw error;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    printWarning(`${message}\nContinuing with built-in help because runtime commands could not be loaded.`);
   } finally {
     stopTask();
   }
@@ -313,7 +399,7 @@ export async function updateEnvRuntime(options: {
   updateTask('Loading command runtime...');
   try {
     printVerbose(`Runtime source: ${baseUrl}`);
-    const document = await fetchSwaggerSchema(baseUrl, token);
+    const document = await fetchSwaggerSchema(baseUrl, token, { envName });
     const runtime = await generateRuntime(document, options.configFile, baseUrl);
     await saveRuntime(runtime, { scope: options.scope });
     await setEnvRuntime(envName, {
