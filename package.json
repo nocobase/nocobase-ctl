@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "build": "pnpm run clean && tsc -p tsconfig.json",
     "dev": "./bin/dev.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --import tsx --test ./test/*.test.ts"
   },
   "keywords": [],
   "author": "",

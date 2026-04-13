@@ -121,7 +121,7 @@ function hasParameterValue(flags: Record<string, any>, parameter: RequestParamet
   return value !== undefined && value !== '';
 }
 
-async function parseBody(flags: Record<string, any>, operation: RequestOperation) {
+export async function parseBody(flags: Record<string, any>, operation: RequestOperation) {
   const inlineBody = flags.body as string | undefined;
   const bodyFile = flags['body-file'] as string | undefined;
   const bodyParameters = operation.parameters.filter((parameter) => parameter.in === 'body');

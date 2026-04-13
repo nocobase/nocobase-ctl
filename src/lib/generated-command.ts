@@ -37,7 +37,7 @@ export interface GeneratedOperation {
   bodyRequired?: boolean;
 }
 
-function buildParameterFlag(parameter: GeneratedParameter) {
+function buildParameterFlag(parameter: GeneratedParameter, options?: { required?: boolean }) {
   const hints: string[] = [parameter.in];
   if (parameter.type === 'object' || parameter.type === 'array' || parameter.jsonEncoded) {
     hints.push('JSON');
@@ -54,10 +54,12 @@ function buildParameterFlag(parameter: GeneratedParameter) {
     .filter(Boolean)
     .join('\n');
 
+  const required = options?.required ?? parameter.required;
+
   if (parameter.type === 'boolean') {
     return Flags.boolean({
       description,
-      ...(parameter.required ? {required: true as const} : {}),
+      ...(required ? {required: true as const} : {}),
     });
   }
 
@@ -65,13 +67,13 @@ function buildParameterFlag(parameter: GeneratedParameter) {
     return Flags.string({
       description,
       multiple: true,
-      ...(parameter.required ? {required: true as const} : {}),
+      ...(required ? {required: true as const} : {}),
     });
   }
 
   return Flags.string({
     description,
-    ...(parameter.required ? {required: true as const} : {}),
+    ...(required ? {required: true as const} : {}),
   });
 }
 
@@ -101,18 +103,21 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
   };
 
   for (const parameter of operation.parameters) {
-    flags[parameter.flagName] = buildParameterFlag(parameter);
+    flags[parameter.flagName] = buildParameterFlag(parameter, {
+      // Body flags are an alternative authoring path to --body/--body-file.
+      // Enforce required body semantics later in parseBody(), after we know
+      // which input mode the user chose.
+      required: parameter.in === 'body' ? false : parameter.required,
+    });
   }
 
   if (operation.hasBody) {
     flags.body = Flags.string({
       description: 'JSON request body string',
-      required: operation.bodyRequired,
       exclusive: ['body-file'],
     });
     flags['body-file'] = Flags.string({
       description: 'Path to JSON request body file',
-      required: false,
       exclusive: ['body'],
     });
   }
