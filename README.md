@@ -1,45 +1,36 @@
-# NocoBase CLI
+# NocoBase CTL
 
-NocoBase CLI combines:
+NocoBase CTL is a command-line tool for managing and controlling NocoBase applications. Its relationship with multiple NocoBase App instances is shown below:
+
+```
+                        +----------------------+
+                        |     NocoBase CTL     |
+                        |      Controller     |
+                        +----------------------+
+                                   |
+                  +----------------+----------------+
+                  |                |                |
+                  v                v                v
+        +----------------+ +----------------+ +----------------+
+        |  NocoBase App  | |  NocoBase App  | |  NocoBase App  |
+        |      Dev       | |      Test      | |      Prod      |
+        +----------------+ +----------------+ +----------------+
+```
+
+NocoBase CTL combines:
 
 - built-in commands for environment management and generic resource access
 - runtime-generated commands loaded from your NocoBase application's Swagger schema
 
 This allows the CLI to stay aligned with the target application instead of relying on a fixed command list.
 
-## Install
-
-Install dependencies for local development:
-
-```bash
-pnpm install
-```
-
-Run in development mode:
-
-```bash
-node ./bin/dev.js --help
-```
-
-Build the CLI:
-
-```bash
-pnpm build
-```
-
-Run the built CLI:
-
-```bash
-node ./bin/run.js --help
-```
-
-After packaging or linking, the executable name is:
-
-```bash
-nocobase-ctl
-```
-
 ## Quick Start
+
+Install NocoBase CTL globally:
+
+```bash
+npm install -g @nocobase/ctl@latest
+```
 
 Add an environment:
 
