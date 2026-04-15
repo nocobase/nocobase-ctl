@@ -8,7 +8,7 @@ import { failTask, startTask, succeedTask } from '../../lib/ui.ts';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default class EnvUpdate extends Command {
-  static summary = 'Update commands for an environment from swagger:get';
+  static summary = 'Refresh an environment runtime from swagger:get and persist connection overrides';
   static id = 'env update';
 
   static flags = {
@@ -26,14 +26,14 @@ export default class EnvUpdate extends Command {
       options: ['project', 'global'],
     }),
     'base-url': Flags.string({
-      description: 'NocoBase API base URL override',
+      description: 'NocoBase API base URL override. When provided, persist it to the target env before saving the refreshed runtime.',
     }),
     role: Flags.string({
       description: 'Role override, sent as X-Role',
     }),
     token: Flags.string({
       char: 't',
-      description: 'API key override',
+      description: 'API key override. When provided, persist it to the target env before saving the refreshed runtime.',
     }),
   };
 

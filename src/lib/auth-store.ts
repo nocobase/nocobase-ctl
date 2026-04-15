@@ -165,6 +165,37 @@ export async function upsertEnv(
   );
 }
 
+export async function updateEnvConnection(
+  envName: string,
+  updates: { baseUrl?: string; accessToken?: string },
+  options: AuthStoreOptions = {},
+) {
+  await writeEnv(
+    envName,
+    (previous) => {
+      const nextBaseUrl = updates.baseUrl ?? previous?.baseUrl;
+      const baseUrlChanged = previous?.baseUrl !== nextBaseUrl;
+      const nextAuth = updates.accessToken
+        ? ({
+            type: 'token',
+            accessToken: updates.accessToken,
+          } satisfies TokenAuthConfig)
+        : baseUrlChanged || previous?.auth?.type === 'token'
+          ? undefined
+          : previous?.auth;
+      const authChanged = !areAuthConfigsEquivalent(previous?.auth, nextAuth);
+
+      return {
+        ...previous,
+        ...(nextBaseUrl !== undefined ? { baseUrl: nextBaseUrl } : {}),
+        auth: nextAuth,
+        runtime: baseUrlChanged || authChanged ? undefined : previous?.runtime,
+      };
+    },
+    options,
+  );
+}
+
 export async function setEnvOauthSession(
   envName: string,
   auth: OauthAuthConfig,

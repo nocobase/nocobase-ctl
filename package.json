@@ -24,6 +24,9 @@
   },
   "oclif": {
     "bin": "nocobase-ctl",
+    "helpOptions": {
+      "flagSortOrder": "none"
+    },
     "additionalHelpFlags": [
       "-h"
     ],

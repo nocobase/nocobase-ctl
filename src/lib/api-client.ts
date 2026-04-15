@@ -106,6 +106,12 @@ function hasParameterValue(flags: Record<string, any>, parameter: RequestParamet
   return value !== undefined && value !== '';
 }
 
+function listProvidedBodyFlags(flags: Record<string, any>, parameters: RequestParameter[]) {
+  return parameters
+    .filter((parameter) => hasParameterValue(flags, parameter))
+    .map((parameter) => `--${parameter.flagName}`);
+}
+
 export async function parseBody(flags: Record<string, any>, operation: RequestOperation) {
   const inlineBody = flags.body as string | undefined;
   const bodyFile = flags['body-file'] as string | undefined;
@@ -113,7 +119,11 @@ export async function parseBody(flags: Record<string, any>, operation: RequestOp
   const hasBodyFlags = bodyParameters.some((parameter) => hasParameterValue(flags, parameter));
 
   if ((inlineBody || bodyFile) && hasBodyFlags) {
-    throw new Error('Use body field flags or --body/--body-file, not both.');
+    const providedBodyFlags = listProvidedBodyFlags(flags, bodyParameters);
+    const rawBodyInput = inlineBody ? '--body' : '--body-file';
+    throw new Error(
+      `Conflicting request body inputs: received ${rawBodyInput} together with body field flags (${providedBodyFlags.join(', ')}). Use either body field flags or --body/--body-file.`,
+    );
   }
 
   if (inlineBody) {

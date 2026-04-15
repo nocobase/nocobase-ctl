@@ -55,10 +55,23 @@ function buildParameterFlag(parameter: GeneratedParameter, options?: { required?
     .join('\n');
 
   const required = options?.required ?? parameter.required;
+  const helpGroup =
+    parameter.in === 'body'
+      ? 'Body Field'
+      : parameter.in === 'path'
+        ? 'Path Parameter'
+        : parameter.in === 'query'
+          ? 'Query Parameter'
+          : parameter.in === 'header'
+            ? 'Header Parameter'
+            : parameter.in === 'cookie'
+              ? 'Cookie Parameter'
+              : undefined;
 
   if (parameter.type === 'boolean') {
     return Flags.boolean({
       description,
+      ...(helpGroup ? {helpGroup} : {}),
       ...(required ? {required: true as const} : {}),
     });
   }
@@ -67,43 +80,20 @@ function buildParameterFlag(parameter: GeneratedParameter, options?: { required?
     return Flags.string({
       description,
       multiple: true,
+      ...(helpGroup ? {helpGroup} : {}),
       ...(required ? {required: true as const} : {}),
     });
   }
 
   return Flags.string({
     description,
+    ...(helpGroup ? {helpGroup} : {}),
     ...(required ? {required: true as const} : {}),
   });
 }
 
 export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.FlagInput<any> {
-  const flags: Interfaces.FlagInput<any> = {
-    'base-url': Flags.string({
-      description: 'NocoBase API base URL, for example http://localhost:13000/api',
-    }),
-    verbose: Flags.boolean({
-      description: 'Show detailed progress output',
-      default: false,
-    }),
-    env: Flags.string({
-      char: 'e',
-      description: 'Environment name',
-    }),
-    role: Flags.string({
-      description: 'Role override, sent as X-Role',
-    }),
-    token: Flags.string({
-      char: 't',
-      description: 'API key override',
-    }),
-    'json-output': Flags.boolean({
-      char: 'j',
-      description: 'Print raw JSON response',
-      default: true,
-      allowNo: true,
-    }),
-  };
+  const flags: Interfaces.FlagInput<any> = {};
 
   for (const parameter of operation.parameters) {
     flags[parameter.flagName] = buildParameterFlag(parameter, {
@@ -116,14 +106,47 @@ export function createGeneratedFlags(operation: GeneratedOperation): Interfaces.
 
   if (operation.hasBody) {
     flags.body = Flags.string({
-      description: 'JSON request body string',
+      description: 'Full JSON request body string. Do not combine with body field flags.',
+      helpGroup: 'Raw JSON Body',
       exclusive: ['body-file'],
     });
     flags['body-file'] = Flags.string({
-      description: 'Path to JSON request body file',
+      description: 'Path to a JSON file containing the full request body. Do not combine with body field flags.',
+      helpGroup: 'Raw JSON Body',
       exclusive: ['body'],
     });
   }
+
+  flags['base-url'] = Flags.string({
+    description: 'NocoBase API base URL, for example http://localhost:13000/api',
+    helpGroup: 'Global',
+  });
+  flags.verbose = Flags.boolean({
+    description: 'Show detailed progress output',
+    default: false,
+    helpGroup: 'Global',
+  });
+  flags.env = Flags.string({
+    char: 'e',
+    description: 'Environment name',
+    helpGroup: 'Global',
+  });
+  flags.role = Flags.string({
+    description: 'Role override, sent as X-Role',
+    helpGroup: 'Global',
+  });
+  flags.token = Flags.string({
+    char: 't',
+    description: 'API key override',
+    helpGroup: 'Global',
+  });
+  flags['json-output'] = Flags.boolean({
+    char: 'j',
+    description: 'Print raw JSON response',
+    default: true,
+    allowNo: true,
+    helpGroup: 'Global',
+  });
 
   return flags;
 }

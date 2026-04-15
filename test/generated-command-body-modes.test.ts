@@ -3,6 +3,7 @@ import test from 'node:test';
 import { Command } from '@oclif/core';
 import { parseBody, type RequestOperation } from '../src/lib/api-client.ts';
 import { createGeneratedFlags, type GeneratedOperation } from '../src/lib/generated-command.ts';
+import { buildExamples } from '../src/lib/runtime-generator.ts';
 
 const testApiOperation: GeneratedOperation = {
   commandId: 'test api',
@@ -80,4 +81,42 @@ test('parseBody should accept raw body JSON without checking sibling flags', asy
 
   const body = await parseBody({ body: '{"primaryValue":"ok","items":[]}' }, operation);
   assert.deepEqual(body, { primaryValue: 'ok', items: [] });
+});
+
+test('parseBody should describe conflicting raw body and body flags clearly', async () => {
+  const operation: RequestOperation = {
+    method: 'post',
+    pathTemplate: '/test:api',
+    parameters: testApiOperation.parameters,
+    hasBody: true,
+    bodyRequired: true,
+  };
+
+  await assert.rejects(
+    () => parseBody({ body: '{"primaryValue":"ok","items":[]}', 'primary-value': 'ok' }, operation),
+    /Conflicting request body inputs: received --body together with body field flags \(\-\-primary-value\)/,
+  );
+});
+
+test('buildExamples should not mix required body flags with --body examples', () => {
+  const examples = buildExamples('test api', {
+    parameters: testApiOperation.parameters,
+    hasBody: true,
+  });
+
+  assert.deepEqual(examples, [
+    'nocobase-ctl test api --primary-value <value> --items value1 --items value2',
+    `nocobase-ctl test api --body '{"primaryValue":"value","items":[]}'`,
+  ]);
+});
+
+test('createGeneratedFlags should group body, raw JSON body, and global flags separately for help output', () => {
+  const flags = createGeneratedFlags(testApiOperation);
+
+  assert.equal(flags['primary-value'].helpGroup, 'Body Field');
+  assert.equal(flags.items.helpGroup, 'Body Field');
+  assert.equal(flags.body.helpGroup, 'Raw JSON Body');
+  assert.equal(flags['body-file'].helpGroup, 'Raw JSON Body');
+  assert.equal(flags.env.helpGroup, 'Global');
+  assert.equal(flags['base-url'].helpGroup, 'Global');
 });

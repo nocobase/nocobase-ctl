@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { getEnv, saveAuthConfig, setEnvOauthSession, upsertEnv } from '../src/lib/auth-store.ts';
+import { getEnv, saveAuthConfig, setEnvOauthSession, updateEnvConnection, upsertEnv } from '../src/lib/auth-store.ts';
 
 async function withTempCliHome(run: () => Promise<void>) {
   const previous = process.env.NOCOBASE_CTL_HOME;
@@ -124,6 +124,72 @@ test('upsertEnv clears an OAuth session when the base URL changes', async () => 
     const env = await getEnv('test', { scope: 'global' });
     assert.equal(env?.baseUrl, 'http://localhost:14000/api');
     assert.equal(env?.auth, undefined);
+  });
+});
+
+test('updateEnvConnection updates only the token and preserves the current base URL', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        currentEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            auth: {
+              type: 'token',
+              accessToken: 'old-token',
+            },
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await updateEnvConnection('test', { accessToken: 'new-token' }, { scope: 'global' });
+
+    const env = await getEnv('test', { scope: 'global' });
+    assert.equal(env?.baseUrl, 'http://localhost:13000/api');
+    assert.equal(env?.auth?.accessToken, 'new-token');
+    assert.equal(env?.runtime, undefined);
+  });
+});
+
+test('updateEnvConnection preserves runtime metadata when connection settings are unchanged', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        currentEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+            auth: {
+              type: 'token',
+              accessToken: 'same-token',
+            },
+            runtime: {
+              version: 'v1',
+              schemaHash: 'hash',
+              generatedAt: '2026-04-13T00:00:00.000Z',
+            },
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await updateEnvConnection('test', { accessToken: 'same-token' }, { scope: 'global' });
+
+    const env = await getEnv('test', { scope: 'global' });
+    assert.deepEqual(env?.runtime, {
+      version: 'v1',
+      schemaHash: 'hash',
+      generatedAt: '2026-04-13T00:00:00.000Z',
+    });
   });
 });
 

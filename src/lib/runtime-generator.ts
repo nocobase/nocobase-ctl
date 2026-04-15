@@ -225,8 +225,41 @@ function formatFlagExample(parameter: GeneratedParameter) {
   return `--${parameter.flagName} <value>`;
 }
 
-function buildExamples(commandId: string, operation: { parameters: GeneratedParameter[]; hasBody?: boolean }) {
-  const requiredFlags = operation.parameters.filter((parameter) => parameter.required).map(formatFlagExample);
+function getSampleJsonValue(parameter: GeneratedParameter): unknown {
+  if (parameter.type === 'boolean') {
+    return true;
+  }
+
+  if (parameter.type === 'integer' || parameter.type === 'number') {
+    return 1;
+  }
+
+  if (parameter.type === 'array') {
+    return [];
+  }
+
+  if (parameter.type === 'object') {
+    return { key: 'value' };
+  }
+
+  return 'value';
+}
+
+function buildSampleBody(parameters: GeneratedParameter[]) {
+  const requiredBodyParameters = parameters.filter((parameter) => parameter.in === 'body' && parameter.required);
+  if (!requiredBodyParameters.length) {
+    return '{"key":"value"}';
+  }
+
+  return JSON.stringify(
+    Object.fromEntries(requiredBodyParameters.map((parameter) => [parameter.name, getSampleJsonValue(parameter)])),
+  );
+}
+
+export function buildExamples(commandId: string, operation: { parameters: GeneratedParameter[]; hasBody?: boolean }) {
+  const requiredParameters = operation.parameters.filter((parameter) => parameter.required);
+  const requiredFlags = requiredParameters.map(formatFlagExample);
+  const requiredNonBodyFlags = requiredParameters.filter((parameter) => parameter.in !== 'body').map(formatFlagExample);
   const examples = [`nocobase-ctl ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}`];
   const firstOptional = operation.parameters.find((parameter) => !parameter.required);
 
@@ -235,7 +268,8 @@ function buildExamples(commandId: string, operation: { parameters: GeneratedPara
   }
 
   if (operation.hasBody) {
-    examples.push(`${examples[0]} --body '{"key":"value"}'`);
+    const prefix = `nocobase-ctl ${commandId}${requiredNonBodyFlags.length ? ` ${requiredNonBodyFlags.join(' ')}` : ''}`;
+    examples.push(`${prefix} --body '${buildSampleBody(operation.parameters)}'`);
   }
 
   return [...new Set(examples)];
