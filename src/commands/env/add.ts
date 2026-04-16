@@ -1,7 +1,7 @@
 import { Command, Flags } from '@oclif/core';
 import { upsertEnv } from '../../lib/auth-store.ts';
 import { formatCliHomeScope, type CliHomeScope } from '../../lib/cli-home.ts';
-import { isInteractiveTerminal, printVerbose, setVerboseMode, promptText } from '../../lib/ui.ts';
+import { isInteractiveTerminal, printVerbose, promptText, setVerboseMode } from '../../lib/ui.ts';
 
 export default class EnvAdd extends Command {
   static summary = 'Add or update a NocoBase environment';
@@ -40,9 +40,15 @@ export default class EnvAdd extends Command {
       (isInteractiveTerminal()
         ? await promptText('Base URL', { defaultValue: 'http://localhost:13000/api' })
         : '');
-    const token =
-      flags.token ||
-      (isInteractiveTerminal() ? await promptText('API key (optional)', { secret: true }) : '');
+
+    if (Object.keys(flags).includes('token') && !flags.token) {
+      flags.token = isInteractiveTerminal() ? await promptText('API key (optional)', { secret: true }) : '';
+      if (!flags.token) {
+        this.error('API key cannot be empty if --token flag is provided without a value.');
+      }
+    }
+
+    const token = flags.token;
 
     if (!baseUrl) {
       this.error('Missing base URL. Pass `--base-url <url>` or run in a TTY to enter it interactively.');
