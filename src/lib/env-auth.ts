@@ -9,7 +9,7 @@ import {
   type AuthStoreOptions,
   type OauthAuthConfig,
 } from './auth-store.ts';
-import { isInteractiveTerminal, printInfo, printVerbose, printWarning, updateTask } from './ui.ts';
+import { printInfo, printVerbose, printWarning, updateTask } from './ui.ts';
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
 const LOOPBACK_HOST = '127.0.0.1';
@@ -452,10 +452,6 @@ export async function authenticateEnvWithOauth(options: {
   envName?: string;
   scope?: AuthStoreOptions['scope'];
 }) {
-  if (!isInteractiveTerminal()) {
-    throw new Error('`nocobase-ctl env auth` requires an interactive terminal.');
-  }
-
   const envName = options.envName ?? (await getCurrentEnvName({ scope: options.scope }));
   const env = await getEnv(envName, { scope: options.scope });
   const baseUrl = env?.baseUrl;
